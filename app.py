@@ -1,13 +1,14 @@
 from tasks import flask_app, long_running_task
 from celery.result import AsyncResult
 from flask import request, jsonify
+from tasks import Utils
 
 
 @flask_app.post("/trigger_task")
 def start_task() -> dict[str, object]:
     iterations = request.args.get('iterations')
     print(iterations)
-    result = long_running_task.delay(int(iterations))
+    result = long_running_task.delay(int(iterations), Utils.cashed_urls, Utils.abs_positive_file_path, Utils.abs_negative_file_path)
     return {"result_id": result.id}
 
 
@@ -31,4 +32,5 @@ def task_result() -> dict[str, object]:
 
 
 if __name__ == "__main__":
+    Utils.cashing_urls()
     flask_app.run(debug=True)
