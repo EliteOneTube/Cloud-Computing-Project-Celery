@@ -3,6 +3,7 @@ from celery import shared_task
 import requests
 import os
 import bs4
+from multiprocessing import Pool
 
 flask_app = create_app()
 celery_app = flask_app.extensions["celery"]
@@ -56,9 +57,15 @@ class Utils:
 
     @staticmethod
     def cashing_urls():
-        for i in range(Utils.cashed_urls_num):
-            Utils.cashed_urls.append(requests.get("https://en.wikipedia.org/wiki/Special:Random").url)
+        with Pool(10) as p:
+            responses = p.map(requests.get, ["https://en.wikipedia.org/wiki/Special:Random"
+                                             for i in range(Utils.cashed_urls_num)])
 
+        for response in responses:
+            if response.url not in Utils.cashed_urls:
+                Utils.cashed_urls.append(response.url)
+            else:
+                Utils.cashed_urls_num -= 1
         print(Utils.cashed_urls_num, 'urls cashed')
 
 @shared_task(ignore_result=False)
